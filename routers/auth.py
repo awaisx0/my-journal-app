@@ -42,7 +42,7 @@ async def signup(
 ):
     user = await db.scalar(select(User).where(User.email == payload.email))
     if user:
-        raise HTTPException(401, detail="Email already exists")
+        raise HTTPException(409, detail="Email already exists")
 
     password_hash = hash_password(payload.password)
 

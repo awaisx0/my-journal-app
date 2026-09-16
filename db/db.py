@@ -9,15 +9,15 @@ from sqlalchemy.ext.asyncio import (
     create_async_engine,
 )
 
+from core.config import settings
+
 
 class Base(DeclarativeBase):
     pass
 
 
-DATABASE_URL = "postgresql+asyncpg://user:password@localhost:5432/app_db"
-
 engine = create_async_engine(
-    DATABASE_URL,
+    settings.database_url,
     echo=True,
     pool_size=20,
     max_overflow=10,

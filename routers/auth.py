@@ -1,5 +1,4 @@
 from datetime import datetime, timedelta, timezone
-import email
 import hashlib
 import secrets
 from typing import Annotated
@@ -41,8 +40,7 @@ async def signup(
     payload: UserCreate,
     db: SessionDep
 ):
-    user = db.scalar(select(User).where(User.email == payload.email))
-    # if email with user already exists, raise HTTPException
+    user = await db.scalar(select(User).where(User.email == payload.email))
     if user:
         raise HTTPException(401, detail="Email already exists")
 
@@ -61,7 +59,6 @@ async def login(user_credentials: UserLogin, db: SessionDep, response: Response)
     user = await db.scalar(select(User).where(User.email == user_credentials.email))
 
     if user is None:
-        # verify_password(user_credentials.password, user.hashed_password)
         raise HTTPException(status_code=401, detail="Incorrect email or password")
 
     if not verify_password(user_credentials.password, user.hashed_password):
@@ -104,7 +101,7 @@ async def refresh(
     if row.revoked:
         raise HTTPException(401, detail="Revoked refresh token")
 
-    if row.expires_at < datetime.now():
+    if row.expires_at < datetime.now(timezone.utc):
         raise HTTPException(401, detail="Expired refresh token")
 
     row.revoked = True

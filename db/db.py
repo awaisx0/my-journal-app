@@ -1,0 +1,40 @@
+from typing import Annotated, AsyncGenerator
+
+from fastapi import Depends
+from sqlalchemy.orm import DeclarativeBase
+
+from sqlalchemy.ext.asyncio import (
+    AsyncSession,
+    async_sessionmaker,
+    create_async_engine,
+)
+
+
+class Base(DeclarativeBase):
+    pass
+
+
+DATABASE_URL = "postgresql+asyncpg://user:password@localhost:5432/app_db"
+
+engine = create_async_engine(
+    DATABASE_URL,
+    echo=True,
+    pool_size=20,
+    max_overflow=10,
+    pool_pre_ping=True,
+)
+
+AsyncSessionLocal = async_sessionmaker(bind=engine, class_=AsyncSession, expire_on_commit=False, autoflush=False)
+
+
+async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
+    async with AsyncSessionLocal() as session:
+        try:
+            yield session
+            await session.commit()
+        except Exception:
+            await session.rollback()
+            raise
+
+
+SessionDep = Annotated[AsyncSession, Depends(get_db_session)]

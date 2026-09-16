@@ -88,8 +88,7 @@ async def delete_journal_book(
         db.add(book)
         await db.commit()
         return {"detail": "deleted successfully"}
-    return HTTPException(401, detail="Bookd with given id doesn't exist")
-
+    raise HTTPException(404, detail="Journal book not found")
 
     
 

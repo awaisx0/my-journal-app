@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -32,7 +32,7 @@ async def create_journal_book(
     payload: JournalBookCreate,
     user: Annotated[User, Depends(get_current_user)], db: SessionDep
 ):
-    new_journal_book = JournalBook(**payload.model_dump())
+    new_journal_book = JournalBook(user_id=user.id, **payload.model_dump())
     db.add(new_journal_book)
     await db.commit()
 
@@ -46,9 +46,9 @@ async def get_journal_book_by_id(
 ):
     journal_book = await db.get(JournalBook, book_id)
     if journal_book:
-        if journal_book.user_id == user.id:
+        if journal_book.user_id == user.id and journal_book.deleted_at == None:
             return journal_book
-    return HTTPException(status_code=404, detail="Journal book not found")
+    raise HTTPException(status_code=404, detail="Journal book not found")
 
 
 @router.patch("/{book_id}", response_model=JournalBookPublic)
@@ -78,12 +78,12 @@ async def update_journal_book_by_id(
 
 @router.delete("/{book_id}", status_code=204)
 async def delete_journal_book(
-    bookt_id: str,
+    book_id: str,
     user: Annotated[User, Depends(get_current_user)], db: SessionDep
 ):
-    book = await db.scalar(select(JournalBook).where(JournalBook.id == bookt_id, JournalBook.user_id == user.id, JournalBook.deleted_at == None))
+    book = await db.scalar(select(JournalBook).where(JournalBook.id == book_id, JournalBook.user_id == user.id, JournalBook.deleted_at == None))
     if book:
-        book.deleted_at = datetime.now()
+        book.deleted_at = datetime.now(timezone.utc)
 
         db.add(book)
         await db.commit()

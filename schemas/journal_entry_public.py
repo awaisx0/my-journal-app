@@ -25,7 +25,9 @@ class JournalEntryCreate(BaseModel):
     # there (see create_entry), never from client-supplied body data.
     title: Annotated[str | None, Field(max_length=255)] = None
     content: str
-    mood: int | None = None
+    # PRD specifies mood as 0-10; the DB column (SmallInteger) only rejects
+    # values outside 16-bit range, so the 0-10 rule has to be enforced here.
+    mood: Annotated[int | None, Field(ge=0, le=10)] = None
 
 
 class JournalEntryUpdate(BaseModel):
@@ -34,4 +36,4 @@ class JournalEntryUpdate(BaseModel):
     # use to reassign it to a book they don't own.
     title: Annotated[str | None, Field(max_length=255)] = None
     content: str | None = None
-    mood: int | None = None
+    mood: Annotated[int | None, Field(ge=0, le=10)] = None

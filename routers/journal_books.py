@@ -73,7 +73,11 @@ async def update_journal_book_by_id(
     for field, value in updates.items():
         setattr(book, field, value)
 
-    await db.flush()
+    # commit (not just flush) so the write is actually finalized before the
+    # response goes out - get_db_session's own commit runs only after the
+    # response is already sent, which is too late for a client that reads
+    # this data back immediately.
+    await db.commit()
     return book
 
 @router.delete("/{book_id}", status_code=204)

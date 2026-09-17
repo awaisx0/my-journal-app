@@ -113,10 +113,11 @@ async def update_entry_by_id(
     for field, value in updates.items():
         setattr(entry, field, value)
 
-    # flush (not just commit) so the response reflects the DB-computed
-    # updated_at value before the session's own auto-commit runs - same
-    # reasoning as update_journal_book_by_id in routers/journal_books.py.
-    await db.flush()
+    # commit (not just flush) so the write is actually finalized before the
+    # response goes out - get_db_session's own commit runs only after the
+    # response is already sent, which is too late for a client that reads
+    # this data back immediately.
+    await db.commit()
     return entry
 
 
